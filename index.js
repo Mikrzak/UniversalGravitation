@@ -3,10 +3,10 @@ ctx = canvas.getContext("2d");
 canvas.width = window.screen.width;
 canvas.height = window.screen.height;
 
-var bodies, drawInterval;
+var bodies = [], drawInterval;
 
 const G = 1; // gravity constant
-const trailLen = 2000; // maximum number of position records in body's trail
+const trailLen = 30000; // maximum number of position records in body's trail
 
 class body{
 
@@ -83,22 +83,19 @@ class body{
             }
         }
 
-        if(!found){
-            this.nextx += this.nextv[0] * dt;
-            this.nexty += this.nextv[1] * dt;
-        }
-        else{ // conservation of momentum and mass
+        if(found){ // conservation of momentum and mass
             if(this.m >= collidingBody.m){
                 this.nextm = parseInt(collidingBody.m + this.m);
                 this.nextr = collidingBody.r + this.r;
                 collidingBody.nextr = 0;
                 this.nextv = [ (this.m * this.v[0] + collidingBody.m * collidingBody.v[0])/(this.m + collidingBody.m), (this.m * this.v[1] + collidingBody.m * collidingBody.v[1])/(this.m + collidingBody.m) ];
 
-                this.nextx += this.nextv[0] * dt;
-                this.nexty += this.nextv[1] * dt;
+                
             }
         }
 
+        this.nextx += this.nextv[0] * dt;
+        this.nexty += this.nextv[1] * dt;
     }
 
     update(){
@@ -149,6 +146,8 @@ document.addEventListener("click",
         vy = window.event.clientY;
         b.v[0] = (vx - x) / 100;
         b.v[1] = (vy - y) / 100;
+        if(Math.abs(b.v[0]) < 0.1) b.v[0] = 0;
+        if(Math.abs(b.v[1]) < 0.1) b.v[1] = 0;
         bodies.push(b);
         b = null;
         x = null;
@@ -166,15 +165,16 @@ document.addEventListener("mousemove",
     function() {
         mouseX = window.event.clientX;
         mouseY = window.event.clientY;
-    });
+});
 
-function drawPhantomSphere(){ // it actually draws the sphere and the velocity vector (bad habit, also blinking a lot)
+function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and the velocity vector (bad habit)
 
-    ctx.lineWidth = 5;
-    if(rx >= 0 && rx < canvas.width && rx != null && ry >= 0 && ry < canvas.height && ry != null){
+    if(rx >= 0 && rx < canvas.width && rx != null && ry >= 0 && ry < canvas.height && ry != null){   
         b.display();
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(x,y);
+        ctx.strokeStyle = "red";
         ctx.lineTo(mouseX, mouseY);
         ctx.stroke();
     }
@@ -188,7 +188,7 @@ function drawPhantomSphere(){ // it actually draws the sphere and the velocity v
     }
 }
 
-bodies = [new body(canvas.width/2,canvas.height/2,50,parseInt(Math.PI * 50 * 50),[0,0])];
+//bodies = [new body(canvas.width/2,canvas.height/2,50,parseInt(Math.PI * 50 * 50),[0,0])];
 
 for(var i = 0; i < 0; i++)
     bodies.push(new body(parseInt(Math.random() * canvas.width),parseInt(Math.random() * canvas.height),10,parseInt(Math.PI * 10 * 10),[1,0]));
@@ -205,8 +205,7 @@ function draw(){
         if(bodies[i].r == 0)
             bodies.splice(i,1);
     }
-    
+    drawPhantomSphere();
 }
 
 drawInterval = setInterval(draw);
-vLineInterval = setInterval(drawPhantomSphere);
