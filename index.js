@@ -3,10 +3,11 @@ ctx = canvas.getContext("2d");
 canvas.width = window.screen.width;
 canvas.height = window.screen.height;
 
-var bodies = [], drawInterval;
+var bodies = [], drawInterval, screenX = 0, screenY = 0, zoom = 1;
 
 const G = 1; // gravity constant
-const trailLen = 30000; // maximum number of position records in body's trail
+const trailLen = 3000; // maximum number of position records in body's trail
+const zoomStep = 0.05;
 
 class body{
 
@@ -31,20 +32,20 @@ class body{
 
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(this.x,this.y,this.r, 0, 2 * Math.PI);
+        ctx.arc((this.x - screenX - canvas.width/2) * zoom + canvas.width/2,(this.y - screenY - canvas.height/2) * zoom + canvas.height/2,this.r * zoom, 0, 2 * Math.PI);
         ctx.strokeStyle = "white";
         ctx.fillStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = "white";
-        ctx.font = "bold " + this.r/2 +"px serif";
-        ctx.fillText(this.m,this.x - this.r / 2,this.y + this.r / 6);
+        // ctx.fillStyle = "white";
+        // ctx.font = "bold " + this.r/2 +"px serif";
+        // ctx.fillText(this.m,this.x - this.r / 2,this.y + this.r / 6);
 
         ctx.strokeStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;  
         for(var i = 0; i < this.trail[0].length - 1; i++){
             ctx.beginPath();
-            ctx.moveTo(this.trail[0][i],this.trail[1][i]);
-            ctx.lineTo(this.trail[0][i + 1],this.trail[1][i + 1])
+            ctx.moveTo((this.trail[0][i] - screenX - canvas.width/2) * zoom + canvas.width/2,(this.trail[1][i] - screenY - canvas.height/2) * zoom + canvas.height/2);
+            ctx.lineTo((this.trail[0][i + 1] - screenX - canvas.width/2) * zoom + canvas.width/2,(this.trail[1][i + 1] - screenY - canvas.height/2) * zoom + canvas.height/2);
             ctx.stroke();
         }
     }
@@ -121,13 +122,13 @@ var mouseX = null, mouseY = null;
 document.addEventListener("click",
     function addBody(){
     if(x < 0 || x > canvas.width || x == null || y < 0 || y > canvas.height || y == null){
-        x = mouseX;
-        y = mouseY;
-    }
+        x = window.event.clientX;
+        y = window.event.clientY;
+    } 
     else if(rx < 0 || rx > canvas.width || rx == null || ry < 0 && ry > canvas.height || ry == null){
         rx = window.event.clientX;
         ry = window.event.clientY;
-        r = parseInt(Math.sqrt((rx - x) * (rx - x) + (ry - y) * (ry - y)));
+        r = parseInt(Math.sqrt((mouseX - x) * (mouseX - x) + (mouseY - y) * (mouseY - y))) / zoom;
         if(r < 1){
             b = null;
             x = null;
@@ -139,13 +140,17 @@ document.addEventListener("click",
             vy = null;
             return; 
         }
-        b = new body(x,y,r,parseInt(Math.PI * r * r), [0,0]);
+        //  console.log(x,y,rx,ry);
+        //console.log(screenX,screenY,(screenX / (screenX * zoom)));
+        b = new body(((x + screenX * zoom - canvas.width/2) / zoom + canvas.width/2),((y + screenY * zoom - canvas.height/2) / zoom + canvas.height/2),r,parseInt(Math.PI * r * r), [0,0]);
+
+        //console.log(b.x,b.y)
     }
     else if(vx < 0 || vx > canvas.width || vx == null || vy < 0 && vy > canvas.height || vy == null){
         vx = window.event.clientX;
         vy = window.event.clientY;
-        b.v[0] = (vx - x) / 100;
-        b.v[1] = (vy - y) / 100;
+        b.v[0] = (vx - x) / 100 / zoom;
+        b.v[1] = (vy - y) / 100 / zoom;
         if(Math.abs(b.v[0]) < 0.1) b.v[0] = 0;
         if(Math.abs(b.v[1]) < 0.1) b.v[1] = 0;
         bodies.push(b);
@@ -165,6 +170,35 @@ document.addEventListener("mousemove",
     function() {
         mouseX = window.event.clientX;
         mouseY = window.event.clientY;
+});
+
+var scrollDragged = false;
+
+document.addEventListener("mousedown",
+    function(event) {
+        if(event.button == 1){
+            scrollDragged = true;
+            screenX += (window.event.clientX - canvas.width  / 2) / zoom;
+            screenY += (window.event.clientY - canvas.height / 2) / zoom;
+        }
+});
+
+document.addEventListener("mouseup",
+    function(event) {
+        if(event.button == 1)
+            scrollDragged = false;
+});
+
+document.addEventListener("wheel",
+    function(event) {
+        if(event.deltaY > 0){
+            zoom -= zoomStep;
+        }
+        else if(event.deltaY < 0){
+            zoom += zoomStep;
+        }
+        if(zoom < zoomStep)
+            zoom = zoomStep;
 });
 
 function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and the velocity vector (bad habit)
@@ -190,8 +224,9 @@ function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and
 
 //bodies = [new body(canvas.width/2,canvas.height/2,50,parseInt(Math.PI * 50 * 50),[0,0])];
 
-for(var i = 0; i < 0; i++)
-    bodies.push(new body(parseInt(Math.random() * canvas.width),parseInt(Math.random() * canvas.height),10,parseInt(Math.PI * 10 * 10),[1,0]));
+// for(var i = 0; i < 1; i++)
+    // bodies.push(new body(canvas.width/2,canvas.height/2,10,parseInt(Math.PI * 10 * 10),[0,0]));
+    // bodies.push(new body(canvas.width/2 + 300,canvas.height/2 + 300,10,parseInt(Math.PI * 10 * 10),[0,0]));
 
 function draw(){
 
@@ -206,6 +241,12 @@ function draw(){
             bodies.splice(i,1);
     }
     drawPhantomSphere();
+
+    if(scrollDragged){
+        // screenX = mouseX - canvas.width /2 ;
+        // screenY = mouseY - canvas.height /2;
+    }
+    //console.log(zoom);
 }
 
 drawInterval = setInterval(draw);
