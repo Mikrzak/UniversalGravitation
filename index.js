@@ -6,8 +6,8 @@ canvas.height = window.screen.height;
 var bodies = [], stars = [], drawInterval, screenX = 0, screenY = 0, zoom = 1, relativeX = canvas.width / 2, relativeY = canvas.height / 2;
 
 const G = 1; // gravity constant
-const trailLen = 3000; // maximum number of position records in body's trail
-const zoomStep = 0.05; // also minimum zoom
+const trailLen = 5000; // maximum number of position records in body's trail
+const zoomStep = 0.01; // also minimum zoom
 const starAmount = 2000; // total number of stars
 
 class star{
