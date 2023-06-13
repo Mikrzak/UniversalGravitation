@@ -3,11 +3,44 @@ ctx = canvas.getContext("2d");
 canvas.width = window.screen.width;
 canvas.height = window.screen.height;
 
-var bodies = [], drawInterval, screenX = 0, screenY = 0, zoom = 1;
+var bodies = [], stars = [], drawInterval, screenX = 0, screenY = 0, zoom = 1, relativeX = canvas.width / 2, relativeY = canvas.height / 2;
 
 const G = 1; // gravity constant
 const trailLen = 3000; // maximum number of position records in body's trail
-const zoomStep = 0.05;
+const zoomStep = 0.05; // also minimum zoom
+const starAmount = 2000; // total number of stars
+
+class star{
+
+    constructor(x,y,r){
+        this.x = x;
+        this.y = y;
+        this.r = r;
+        this.x0 = this.x;
+        this.y0 = this.y;
+        //console.log(this.x0 + screenX);
+    }
+
+    display(){
+
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc((this.x - screenX - canvas.width/2) * zoom + canvas.width/2,(this.y - screenY - canvas.height/2) * zoom + canvas.height/2,this.r * zoom, 0, 2 * Math.PI);
+        ctx.strokeStyle = "white";
+        ctx.fillStyle = `rgb(255,255,255)`;
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    update(generateRandom = false){
+        if(generateRandom){
+            this.x0 = parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep;
+            this.y0 = parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep;
+        }
+        this.x = this.x0 + screenX;
+        this.y = this.y0 + screenY;
+    }
+}
 
 class body{
 
@@ -32,7 +65,7 @@ class body{
 
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc((this.x - screenX - canvas.width/2) * zoom + canvas.width/2,(this.y - screenY - canvas.height/2) * zoom + canvas.height/2,this.r * zoom, 0, 2 * Math.PI);
+        ctx.arc((this.x - screenX - canvas.width / 2) * zoom + canvas.width / 2,(this.y - screenY - canvas.height / 2) * zoom + canvas.height / 2,this.r * zoom, 0, 2 * Math.PI);
         ctx.strokeStyle = "white";
         ctx.fillStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         ctx.fill();
@@ -41,18 +74,18 @@ class body{
         // ctx.font = "bold " + this.r/2 +"px serif";
         // ctx.fillText(this.m,this.x - this.r / 2,this.y + this.r / 6);
 
-        ctx.strokeStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;  
+        ctx.strokeStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         for(var i = 0; i < this.trail[0].length - 1; i++){
             ctx.beginPath();
-            ctx.moveTo((this.trail[0][i] - screenX - canvas.width/2) * zoom + canvas.width/2,(this.trail[1][i] - screenY - canvas.height/2) * zoom + canvas.height/2);
-            ctx.lineTo((this.trail[0][i + 1] - screenX - canvas.width/2) * zoom + canvas.width/2,(this.trail[1][i + 1] - screenY - canvas.height/2) * zoom + canvas.height/2);
+            ctx.moveTo((this.trail[0][i] - screenX - canvas.width / 2) * zoom + canvas.width / 2,(this.trail[1][i] - screenY - canvas.height / 2) * zoom + canvas.height / 2);
+            ctx.lineTo((this.trail[0][i + 1] - screenX - canvas.width / 2) * zoom + canvas.width / 2,(this.trail[1][i + 1] - screenY - canvas.height / 2) * zoom + canvas.height / 2);
             ctx.stroke();
         }
     }
 
     calculate(){
 
-        var startTime = performance.now();
+        //var startTime = performance.now();
         var Fv = [0,0], prevFv = [0,0];  
 
         for(var i = 0; i < bodies.length; i++){
@@ -90,8 +123,6 @@ class body{
                 this.nextr = collidingBody.r + this.r;
                 collidingBody.nextr = 0;
                 this.nextv = [ (this.m * this.v[0] + collidingBody.m * collidingBody.v[0])/(this.m + collidingBody.m), (this.m * this.v[1] + collidingBody.m * collidingBody.v[1])/(this.m + collidingBody.m) ];
-
-                
             }
         }
 
@@ -128,7 +159,14 @@ document.addEventListener("click",
     else if(rx < 0 || rx > canvas.width || rx == null || ry < 0 && ry > canvas.height || ry == null){
         rx = window.event.clientX;
         ry = window.event.clientY;
-        r = parseInt(Math.sqrt((mouseX - x) * (mouseX - x) + (mouseY - y) * (mouseY - y))) / zoom;
+        //  console.log(x,y,rx,ry);
+        //console.log(screenX,screenY,(screenX / (screenX * zoom)));
+        posX = ((x + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
+        posY = ((y + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
+        mouseXWorld = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
+        mouseYWorld = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
+        r = parseInt(Math.sqrt((mouseXWorld - posX) * (mouseXWorld - posX) + (mouseYWorld - posY) * (mouseYWorld - posY)));
+
         if(r < 1){
             b = null;
             x = null;
@@ -140,17 +178,14 @@ document.addEventListener("click",
             vy = null;
             return; 
         }
-        //  console.log(x,y,rx,ry);
-        //console.log(screenX,screenY,(screenX / (screenX * zoom)));
-        b = new body(((x + screenX * zoom - canvas.width/2) / zoom + canvas.width/2),((y + screenY * zoom - canvas.height/2) / zoom + canvas.height/2),r,parseInt(Math.PI * r * r), [0,0]);
 
-        //console.log(b.x,b.y)
+        b = new body(posX,posY,r,parseInt(Math.PI * r * r), [0,0]);
     }
     else if(vx < 0 || vx > canvas.width || vx == null || vy < 0 && vy > canvas.height || vy == null){
-        vx = window.event.clientX;
-        vy = window.event.clientY;
-        b.v[0] = (vx - x) / 100 / zoom;
-        b.v[1] = (vy - y) / 100 / zoom;
+        vx = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
+        vy = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
+        b.v[0] = (vx - posX) / 100;
+        b.v[1] = (vy - posY) / 100;
         if(Math.abs(b.v[0]) < 0.1) b.v[0] = 0;
         if(Math.abs(b.v[1]) < 0.1) b.v[1] = 0;
         bodies.push(b);
@@ -178,8 +213,33 @@ document.addEventListener("mousedown",
     function(event) {
         if(event.button == 1){
             scrollDragged = true;
-            screenX += (window.event.clientX - canvas.width  / 2) / zoom;
-            screenY += (window.event.clientY - canvas.height / 2) / zoom;
+            
+            posX_ = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
+            posY_ = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
+
+            var found = false;
+            for(var i = 0; i < bodies.length; i++){
+                if(bodies[i].x - bodies[i].r <= posX_ && bodies[i].x + bodies[i].r >= posX_ && bodies[i].y - bodies[i].r <= posY_ && bodies[i].y + bodies[i].r >= posY_){
+                    relativeBody = bodies[i];
+                    found = true;
+                    break;
+                }
+            }
+
+            if(found){
+                relativeX = relativeBody.x;
+                relativeY = relativeBody.y;
+            }
+            else{
+                relativeX = canvas.width / 2;
+                relativeY = canvas.height / 2;
+                screenX += (window.event.clientX - canvas.width  / 2) / zoom;
+                screenY += (window.event.clientY - canvas.height / 2) / zoom;
+            }
+
+            for(var i = 0; i < stars.length; i++){
+                stars[i].update(true);
+            }
         }
 });
 
@@ -209,7 +269,7 @@ function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and
         ctx.beginPath();
         ctx.moveTo(x,y);
         ctx.strokeStyle = "red";
-        ctx.lineTo(mouseX, mouseY);
+        ctx.lineTo(mouseX,mouseY);
         ctx.stroke();
     }
     else if(x >= 0 && x < canvas.width && x != null && y >= 0 && y < canvas.height && y != null){
@@ -228,10 +288,20 @@ function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and
     // bodies.push(new body(canvas.width/2,canvas.height/2,10,parseInt(Math.PI * 10 * 10),[0,0]));
     // bodies.push(new body(canvas.width/2 + 300,canvas.height/2 + 300,10,parseInt(Math.PI * 10 * 10),[0,0]));
 
+for(var i = 0; i < starAmount; i++)
+    stars.push(new star(parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep, parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep , 5));
+
+
 function draw(){
+
+    var startTime = performance.now();
 
     ctx.fillStyle = `rgb(0,0,50)`;
     ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    for(var i = 0; i < stars.length; i++){
+        stars[i].display();
+    }
     
     for(var i = 0; i < bodies.length; i++){
         bodies[i].display();
@@ -239,14 +309,28 @@ function draw(){
         bodies[i].update();
         if(bodies[i].r == 0)
             bodies.splice(i,1);
+        console.log(bodies[i].r)
     }
+    
     drawPhantomSphere();
 
-    if(scrollDragged){
+    //if(scrollDragged){
         // screenX = mouseX - canvas.width /2 ;
         // screenY = mouseY - canvas.height /2;
+    //}
+
+    if(relativeX != canvas.width / 2 && relativeY != canvas.height / 2){
+        screenX = relativeBody.x - canvas.width / 2;
+        screenY = relativeBody.y - canvas.height / 2;
+
+        for(var i = 0; i < stars.length; i++){
+            stars[i].update(false);
+        }
     }
-    //console.log(zoom);
+
+    //console.log(relativeX,relativeY);
+
+    //console.log(1 / ((performance.now() - startTime) / 1000))
 }
 
 drawInterval = setInterval(draw);
