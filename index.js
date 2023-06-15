@@ -7,7 +7,7 @@ var bodies = [], stars = [], drawInterval, screenX = 0, screenY = 0, zoom = 1, r
 
 const G = 1; // gravity constant
 const trailLen = 5000; // maximum number of position records in body's trail
-const zoomStep = 0.01; // also minimum zoom
+const zoomStep = 0.05; // also minimum zoom
 const starAmount = 2000; // total number of stars
 
 class star{
@@ -70,9 +70,6 @@ class body{
         ctx.fillStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         ctx.fill();
         ctx.stroke();
-        // ctx.fillStyle = "white";
-        // ctx.font = "bold " + this.r/2 +"px serif";
-        // ctx.fillText(this.m,this.x - this.r / 2,this.y + this.r / 6);
 
         ctx.strokeStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         for(var i = 0; i < this.trail[0].length - 1; i++){
@@ -149,6 +146,7 @@ class body{
 
 var b = null, x = null, y = null, rx = null, ry = null, r = null, vx = null, vy = null;
 var mouseX = null, mouseY = null;
+var bodyCreated = false;
 
 document.addEventListener("click",
     function addBody(){
@@ -159,8 +157,6 @@ document.addEventListener("click",
     else if(rx < 0 || rx > canvas.width || rx == null || ry < 0 && ry > canvas.height || ry == null){
         rx = window.event.clientX;
         ry = window.event.clientY;
-        //  console.log(x,y,rx,ry);
-        //console.log(screenX,screenY,(screenX / (screenX * zoom)));
         posX = ((x + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
         posY = ((y + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
         mouseXWorld = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
@@ -176,10 +172,11 @@ document.addEventListener("click",
             r = null;
             vx = null;
             vy = null;
+            bodyCreated = false;
             return; 
         }
-
         b = new body(posX,posY,r,parseInt(Math.PI * r * r), [0,0]);
+        bodyCreated = true;
     }
     else if(vx < 0 || vx > canvas.width || vx == null || vy < 0 && vy > canvas.height || vy == null){
         vx = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
@@ -197,8 +194,60 @@ document.addEventListener("click",
         r = null;
         vx = null;
         vy = null;
+        bodyCreated = false;
     }
 
+});
+
+document.addEventListener("contextmenu",
+    function() {
+
+        if(bodyCreated){
+
+            posX_ = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
+            posY_ = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
+
+            var found = false;
+            var chosenBody; 
+
+            for(var i = 0; i < bodies.length; i++){
+                if(bodies[i].x - bodies[i].r <= posX_ && bodies[i].x + bodies[i].r >= posX_ && bodies[i].y - bodies[i].r <= posY_ && bodies[i].y + bodies[i].r >= posY_){
+                    chosenBody = bodies[i];
+                    found = true;
+                    break;
+                }
+            }
+
+            if(!found)
+                return;
+            
+            var x1 = canvas.width/2;
+            var y1 = canvas.height/2 + 200;
+            var d = Math.sqrt((b.x - chosenBody.x) * (b.x - chosenBody.x) + (b.y - chosenBody.y) * (b.y - chosenBody.y));
+            var v_ = Math.sqrt((G * chosenBody.m) / d);
+            var x_ = Math.sqrt(d*d + v_*v_);
+            var signX = 1,signY = 1;
+            
+            if(Math.abs(b.x - chosenBody.x) <= Math.abs(b.y - chosenBody.y)){
+                b.v[1] = (v_*v_)/x_ * signX;
+                b.v[0] = (v_*d)/x_ * signY;
+            }
+            else{
+                b.v[0] = (v_*v_)/x_ * signX;
+                b.v[1] = (v_*d)/x_ * signY;
+            }
+            bodies.push(b);
+
+            b = null;
+            x = null;
+            y = null;
+            rx = null;
+            ry = null;
+            r = null;
+            vx = null;
+            vy = null;
+            bodyCreated = false;
+        }
 });
 
 document.addEventListener("mousemove",
@@ -282,12 +331,6 @@ function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and
     }
 }
 
-//bodies = [new body(canvas.width/2,canvas.height/2,50,parseInt(Math.PI * 50 * 50),[0,0])];
-
-// for(var i = 0; i < 1; i++)
-    // bodies.push(new body(canvas.width/2,canvas.height/2,10,parseInt(Math.PI * 10 * 10),[0,0]));
-    // bodies.push(new body(canvas.width/2 + 300,canvas.height/2 + 300,10,parseInt(Math.PI * 10 * 10),[0,0]));
-
 for(var i = 0; i < starAmount; i++)
     stars.push(new star(parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep, parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep , 5));
 
@@ -309,15 +352,9 @@ function draw(){
         bodies[i].update();
         if(bodies[i].r == 0)
             bodies.splice(i,1);
-        console.log(bodies[i].r)
     }
     
     drawPhantomSphere();
-
-    //if(scrollDragged){
-        // screenX = mouseX - canvas.width /2 ;
-        // screenY = mouseY - canvas.height /2;
-    //}
 
     if(relativeX != canvas.width / 2 && relativeY != canvas.height / 2){
         screenX = relativeBody.x - canvas.width / 2;
@@ -327,8 +364,6 @@ function draw(){
             stars[i].update(false);
         }
     }
-
-    //console.log(relativeX,relativeY);
 
     //console.log(1 / ((performance.now() - startTime) / 1000))
 }
