@@ -18,7 +18,6 @@ class star{
         this.r = r;
         this.x0 = this.x;
         this.y0 = this.y;
-        //console.log(this.x0 + screenX);
     }
 
     display(){
