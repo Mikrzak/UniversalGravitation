@@ -145,13 +145,14 @@ class body{
 
 var b = null, x = null, y = null, rx = null, ry = null, r = null, vx = null, vy = null;
 var mouseX = null, mouseY = null;
-var bodyCreated = false;
+var bodyCreated = false, startedBodyCreation = false;
 
 document.addEventListener("click",
     function addBody(){
     if(x < 0 || x > canvas.width || x == null || y < 0 || y > canvas.height || y == null){
         x = window.event.clientX;
         y = window.event.clientY;
+        startedBodyCreation = true;
     } 
     else if(rx < 0 || rx > canvas.width || rx == null || ry < 0 && ry > canvas.height || ry == null){
         rx = window.event.clientX;
@@ -175,6 +176,7 @@ document.addEventListener("click",
             return; 
         }
         b = new body(posX,posY,r,parseInt(Math.PI * r * r), [0,0]);
+        startedBodyCreation = false;
         bodyCreated = true;
     }
     else if(vx < 0 || vx > canvas.width || vx == null || vy < 0 && vy > canvas.height || vy == null){
@@ -196,6 +198,22 @@ document.addEventListener("click",
         bodyCreated = false;
     }
 
+});
+
+document.addEventListener("contextmenu",
+    function(event) {
+        event.preventDefault();
+        if(startedBodyCreation){
+            b = null;
+            x = null;
+            y = null;
+            rx = null;
+            ry = null;
+            r = null;
+            vx = null;
+            vy = null;
+            bodyCreated = false;
+        }
 });
 
 document.addEventListener("contextmenu",
