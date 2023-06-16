@@ -1,7 +1,7 @@
 canvas = document.getElementById("canvas");
 ctx = canvas.getContext("2d");
-canvas.width = window.screen.width;
-canvas.height = window.screen.height;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 var bodies = [], stars = [], drawInterval, screenX = 0, screenY = 0, zoom = 1, relativeX = canvas.width / 2, relativeY = canvas.height / 2;
 
