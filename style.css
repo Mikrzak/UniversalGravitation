@@ -5,9 +5,14 @@ html, body {
 }
 
 #infoDiv{
+    width: 100%;
     position: absolute;
     bottom: 0;
     left: 0;
+}
+
+#innerInfoDiv{
+    float: left;
 }
 
 #objectInfo{
@@ -17,10 +22,20 @@ html, body {
 }
 
 #simulationSpeed{
-    width: 160px;
+    width: 185px;
 }
 
 #simulationSpeedLabel{
+    position: relative;
     font-size: x-large;
     color: white;
+}
+
+#guide{
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    color: white;
+    font-size: large;
+    float: right;
 }
