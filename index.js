@@ -211,8 +211,6 @@ document.addEventListener("mouseup",
             vy = null;
             bodyCreated = false;
         }
-        console.log(window.event.clientX,rect.left);
-        console.log(window.event.clientX >= rect.left);
 });
 
 document.addEventListener("contextmenu",
