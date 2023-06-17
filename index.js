@@ -256,15 +256,14 @@ document.addEventListener("contextmenu",
             var d = Math.sqrt((b.x - chosenBody.x) * (b.x - chosenBody.x) + (b.y - chosenBody.y) * (b.y - chosenBody.y));
             var v_ = Math.sqrt((G * chosenBody.m) / d);
             var x_ = Math.sqrt(d*d + v_*v_);
-            var signX = 1,signY = 1;
             
             if(Math.abs(b.x - chosenBody.x) <= Math.abs(b.y - chosenBody.y)){
-                b.v[1] = (v_*v_)/x_ * signX;
-                b.v[0] = (v_*d)/x_ * signY;
+                b.v[1] = (v_*v_)/x_;
+                b.v[0] = (v_*d)/x_;
             }
             else{
-                b.v[0] = (v_*v_)/x_ * signX;
-                b.v[1] = (v_*d)/x_ * signY;
+                b.v[0] = (v_*v_)/x_;
+                b.v[1] = (v_*d)/x_;
             }
             bodies.push(b);
 
@@ -345,6 +344,22 @@ document.addEventListener("wheel",
             zoom = zoomStep;
 });
 
+//https://stackoverflow.com/questions/27116221/prevent-zoom-cross-browser
+
+window.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.which === 61 || e.which === 107 || e.which === 173 || e.which === 109 || e.which === 187 || e.which === 189)) {
+        e.preventDefault();
+    }
+  }, false);
+  
+  document.addEventListener(
+    "wheel",
+    function touchHandler(e) {
+      if (e.ctrlKey) {
+        e.preventDefault();
+      }
+    }, { passive: false } );
+
 function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and the velocity vector (bad habit)
 
     if(rx >= 0 && rx < canvas.width && rx != null && ry >= 0 && ry < canvas.height && ry != null){   
@@ -417,10 +432,9 @@ function draw(){
                                    "a: [" + parseInt(relativeBody.a[0] * 1000) / 1000 + ", " + parseInt(relativeBody.a[1] * 1000) / 1000 + "]" + '\n' +
                                    "m: " + relativeBody.m + '\n' +
                                    "r: " + relativeBody.r + '\n' +
-                                   "pos: [" + parseInt(relativeBody.x * 100) / 100 + ", " + parseInt(relativeBody.y * 100) / 100 + "]"
+                                   "pos: [" + parseInt(relativeBody.x * 100) / 100 + ", " + parseInt(relativeBody.y * 100) / 100 + "]" + '\n' +
+                                   "fps: " + parseInt(1 / ((performance.now() - startTime) / 1000));
     }
-
-    //console.log(1 / ((performance.now() - startTime) / 1000))
 }
 
 drawInterval = setInterval(draw);
