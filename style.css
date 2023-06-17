@@ -3,3 +3,24 @@ html, body {
     padding: 0 !important;
     overflow: hidden;
 }
+
+#infoDiv{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+}
+
+#objectInfo{
+    color: white;
+    font-size: x-large;
+    white-space: pre-wrap;
+}
+
+#simulationSpeed{
+    width: 160px;
+}
+
+#simulationSpeedLabel{
+    font-size: x-large;
+    color: white;
+}
