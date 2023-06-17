@@ -1,18 +1,27 @@
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
+
 var objectInfoText = document.getElementById("objectInfo");
+var infoDiv = document.getElementById("infoDiv");
+var innerInfoDiv = document.getElementById("innerInfoDiv");
 var simulationSpeedSlider = document.getElementById("simulationSpeed");
+var showTrailCheckbox = document.getElementById("showTrail");
+var lockFpsCheckbox = document.getElementById("lockFps");
+var showStarsCheckbox = document.getElementById("showStars");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
-var rect = simulationSpeedSlider.getBoundingClientRect(); //https://stackoverflow.com/questions/442404/retrieve-the-position-x-y-of-an-html-element
+var rect = infoDiv.getBoundingClientRect(); //https://stackoverflow.com/questions/442404/retrieve-the-position-x-y-of-an-html-element
+// rect.bottom = 1200;
+// rect.top = 800;
 
-var bodies = [], stars = [], drawInterval, screenX = 0, screenY = 0, zoom = 1, relativeX = canvas.width / 2, relativeY = canvas.height / 2;
+var bodies = [], stars = [], drawInterval, screenX = 0, screenY = 0, zoom = 1, relativeX = canvas.width / 2, relativeY = canvas.height / 2, fps;
 
 const G = 1; // gravity constant
 const trailLen = 5000; // maximum number of position records in body's trail
-const zoomStep = 0.03; // also minimum zoom
+const zoomStep = 0.03; // zooming step, also minimum zoom
 const starAmount = 2000; // total number of stars
+const starSize = 5; // star radius
 
 class star{
 
@@ -23,6 +32,7 @@ class star{
         this.x0 = this.x;
         this.y0 = this.y;
         this.visible = true;
+        //console.log(this.x0 + screenX);
     }
 
     display(){
@@ -61,6 +71,7 @@ class body{
         this.nextr = r;
         this.nextv = [v[0],v[1]];
         this.a = [0,0];
+
         this.trail = [[],[]];
     }
 
@@ -73,6 +84,11 @@ class body{
         ctx.fillStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         ctx.fill();
         ctx.stroke();
+        // ctx.fillStyle = "white";
+        // ctx.font = "bold " + this.r/2 +"px serif";
+        // ctx.fillText(this.m,this.x - this.r / 2,this.y + this.r / 6);
+
+        if(!showTrailCheckbox.checked) return;
 
         ctx.strokeStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         for(var i = 0; i < this.trail[0].length - 1; i++){
@@ -140,6 +156,9 @@ class body{
         this.r = this.nextr;
         this.trail[0].push(this.x);
         this.trail[1].push(this.y);
+
+        if(!showTrailCheckbox.checked) return;
+
         if(this.trail[0].length >= trailLen){
             this.trail[0] = this.trail[0].slice(1);
             this.trail[1] = this.trail[1].slice(1);
@@ -159,6 +178,8 @@ document.addEventListener("mouseup",
 
             if(window.event.clientX >= 0 && window.event.clientX <= rect.right && window.event.clientY >= rect.top && window.event.clientY <= rect.bottom)
                 return;
+            // if(window.event.clientX == 0)
+            //     return;
             x = window.event.clientX;
             y = window.event.clientY;
             startedBodyCreation = true;
@@ -169,6 +190,8 @@ document.addEventListener("mouseup",
                 return;
             rx = window.event.clientX;
             ry = window.event.clientY;
+            //  console.log(x,y,rx,ry);
+            //console.log(screenX,screenY,(screenX / (screenX * zoom)));
             posX = ((x + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
             posY = ((y + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
             mouseXWorld = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
@@ -265,6 +288,7 @@ document.addEventListener("contextmenu",
                 b.v[0] = (v_*v_)/x_;
                 b.v[1] = (v_*d)/x_;
             }
+            
             bodies.push(b);
 
             b = null;
@@ -295,12 +319,15 @@ document.addEventListener("mousedown",
             bodyCanBeCreated = true;
 });
 
+//var scrollDragged = false;
+
 document.addEventListener("mousedown",
     function(event) {
 
         if(event.button == 1){
 
             event.preventDefault();
+            //scrollDragged = true;
             
             posX_ = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
             posY_ = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
@@ -331,6 +358,12 @@ document.addEventListener("mousedown",
             }
         }
 });
+
+// document.addEventListener("mouseup",
+//     function(event) {
+//         if(event.button == 1)
+//             scrollDragged = false;
+// });
 
 document.addEventListener("wheel",
     function(event) {
@@ -383,8 +416,33 @@ function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and
 
 //bodies.push(new body(canvas.width/2,canvas.height/2,100,parseInt(Math.PI * 100 * 100),[0,0]));
 
+// for(var i = 0; i < 1; i++)
+    // bodies.push(new body(canvas.width/2,canvas.height/2,10,parseInt(Math.PI * 10 * 10),[0,0]));
+    // bodies.push(new body(canvas.width/2 + 300,canvas.height/2 + 300,10,parseInt(Math.PI * 10 * 10),[0,0]));
+
 for(var i = 0; i < starAmount; i++)
-    stars.push(new star(parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep, parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep , 5));
+    stars.push(new star(parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep, parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep , starSize));
+
+function changeDrawFps(){
+
+    drawInterval = clearInterval(drawInterval);
+    if(lockFpsCheckbox.checked)
+        drawInterval = setInterval(draw,16.66667)
+    else
+        drawInterval = setInterval(draw);
+}
+
+function toggleStars(){
+
+    if(showStarsCheckbox.checked){
+        for(var i = 0; i < starAmount; i++)
+            stars[i].visible = true;
+    }
+    else{
+        for(var i = 0; i < starAmount; i++)
+            stars[i].visible = false;
+    }
+}
 
 function draw(){
 
@@ -407,34 +465,55 @@ function draw(){
 
     drawPhantomSphere();
 
+    //if(scrollDragged){
+        // screenX = mouseX - canvas.width /2 ;
+        // screenY = mouseY - canvas.height /2;
+    //}
+
     if(relativeX != canvas.width / 2 && relativeY != canvas.height / 2){
 
         screenX = relativeBody.x - canvas.width / 2;
         screenY = relativeBody.y - canvas.height / 2;
+        rect = innerInfoDiv.getBoundingClientRect();
 
-        if(simulationSpeedSlider.value <= 9){
-            for(var i = 0; i < starAmount / (15 - simulationSpeedSlider.value); i++){
-                stars[i].visible = true;
-                stars[i].update();
-            }
-            for(var i = parseInt(starAmount / (15 - simulationSpeedSlider.value)); i < starAmount; i++){
-                stars[i].visible = false;
+        if(showStarsCheckbox.checked){
+            if(simulationSpeedSlider.value != 0){
+                if(simulationSpeedSlider.value <= 9){
+                    for(var i = 0; i < starAmount / (33 - Math.pow(simulationSpeedSlider.value, 1.5)); i++){
+                        stars[i].visible = true;
+                        stars[i].update();
+                    }
+                    for(var i = parseInt(starAmount / (33 - Math.pow(simulationSpeedSlider.value, 1.5))); i < starAmount; i++){
+                        stars[i].visible = false;
+                    }
+                }
+                else{
+                    for(var i = 0; i < starAmount; i++){
+                        stars[i].visible = true;
+                        stars[i].update();
+                    }
+                }
             }
         }
-        else{
-            for(var i = 0; i < starAmount; i++){
-                stars[i].visible = true;
-                stars[i].update();
-            }
-        }
 
-        objectInfoText.innerHTML = "v: [" + parseInt(relativeBody.v[0] * 1000) / 1000 + ", " + parseInt(relativeBody.v[1] * 1000) / 1000 + "]" + '\n' +
-                                   "a: [" + parseInt(relativeBody.a[0] * 1000) / 1000 + ", " + parseInt(relativeBody.a[1] * 1000) / 1000 + "]" + '\n' +
-                                   "m: " + relativeBody.m + '\n' +
-                                   "r: " + relativeBody.r + '\n' +
+        fps = parseInt(1 / ((performance.now() - startTime) / 1000));
+        if(lockFpsCheckbox.checked && fps > 60)
+            fps = 60;
+
+        //https://webmasters.stackexchange.com/questions/39777/mathml-html-symbol-for-mathematical-vector
+        objectInfoText.innerHTML = "<math xmlns='http://www.w3.org/1998/Math/MathML'><mover><mi>v</mi><mo mathsize='50%'>&rarr;</mo></mover></math> = [" + parseInt(relativeBody.v[0] * 1000) / 1000 + ", " + parseInt(relativeBody.v[1] * 1000) / 1000 + "]" + '\n' +
+                                   "<math xmlns='http://www.w3.org/1998/Math/MathML'><mover><mi>a</mi><mo mathsize='50%'>&rarr;</mo></mover></math> = [" + parseInt(relativeBody.a[0] * 1000) / 1000 + ", " + parseInt(relativeBody.a[1] * 1000) / 1000 + "]" + '\n' +
+                                   "<math xmlns='http://www.w3.org/1998/Math/MathML'><mover><mi>F</mi><mo mathsize='50%'>&rarr;</mo></mover></math> = [" + parseInt(relativeBody.a[0] * relativeBody.m * 1000) / 1000 + ", " + parseInt(relativeBody.a[1] * relativeBody.m * 1000) / 1000 + "]" + '\n' +
+                                   "m = " + relativeBody.m + '\n' +
+                                   "r = " + relativeBody.r + '\n' +
                                    "pos: [" + parseInt(relativeBody.x * 100) / 100 + ", " + parseInt(relativeBody.y * 100) / 100 + "]" + '\n' +
-                                   "fps: " + parseInt(1 / ((performance.now() - startTime) / 1000));
+                                   "fps: " + fps;
+
     }
+    else
+        rect = infoDiv.getBoundingClientRect();
+
+    //console.log(relativeX,relativeY);
 }
 
 drawInterval = setInterval(draw);
