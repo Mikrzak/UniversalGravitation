@@ -6,8 +6,6 @@ var simulationSpeedSlider = document.getElementById("simulationSpeed");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 var rect = simulationSpeedSlider.getBoundingClientRect(); //https://stackoverflow.com/questions/442404/retrieve-the-position-x-y-of-an-html-element
-// rect.bottom = 1200;
-// rect.top = 800;
 
 var bodies = [], stars = [], drawInterval, screenX = 0, screenY = 0, zoom = 1, relativeX = canvas.width / 2, relativeY = canvas.height / 2;
 
@@ -25,7 +23,6 @@ class star{
         this.x0 = this.x;
         this.y0 = this.y;
         this.visible = true;
-        //console.log(this.x0 + screenX);
     }
 
     display(){
@@ -64,7 +61,6 @@ class body{
         this.nextr = r;
         this.nextv = [v[0],v[1]];
         this.a = [0,0];
-
         this.trail = [[],[]];
     }
 
@@ -77,9 +73,6 @@ class body{
         ctx.fillStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         ctx.fill();
         ctx.stroke();
-        // ctx.fillStyle = "white";
-        // ctx.font = "bold " + this.r/2 +"px serif";
-        // ctx.fillText(this.m,this.x - this.r / 2,this.y + this.r / 6);
 
         ctx.strokeStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         for(var i = 0; i < this.trail[0].length - 1; i++){
@@ -166,8 +159,6 @@ document.addEventListener("mouseup",
 
             if(window.event.clientX >= 0 && window.event.clientX <= rect.right && window.event.clientY >= rect.top && window.event.clientY <= rect.bottom)
                 return;
-            // if(window.event.clientX == 0)
-            //     return;
             x = window.event.clientX;
             y = window.event.clientY;
             startedBodyCreation = true;
@@ -178,8 +169,6 @@ document.addEventListener("mouseup",
                 return;
             rx = window.event.clientX;
             ry = window.event.clientY;
-            //  console.log(x,y,rx,ry);
-            //console.log(screenX,screenY,(screenX / (screenX * zoom)));
             posX = ((x + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
             posY = ((y + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
             mouseXWorld = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
@@ -309,15 +298,12 @@ document.addEventListener("mousedown",
             bodyCanBeCreated = true;
 });
 
-//var scrollDragged = false;
-
 document.addEventListener("mousedown",
     function(event) {
 
         if(event.button == 1){
 
             event.preventDefault();
-            //scrollDragged = true;
             
             posX_ = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
             posY_ = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
@@ -348,12 +334,6 @@ document.addEventListener("mousedown",
             }
         }
 });
-
-// document.addEventListener("mouseup",
-//     function(event) {
-//         if(event.button == 1)
-//             scrollDragged = false;
-// });
 
 document.addEventListener("wheel",
     function(event) {
@@ -390,13 +370,8 @@ function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and
 
 //bodies.push(new body(canvas.width/2,canvas.height/2,100,parseInt(Math.PI * 100 * 100),[0,0]));
 
-// for(var i = 0; i < 1; i++)
-    // bodies.push(new body(canvas.width/2,canvas.height/2,10,parseInt(Math.PI * 10 * 10),[0,0]));
-    // bodies.push(new body(canvas.width/2 + 300,canvas.height/2 + 300,10,parseInt(Math.PI * 10 * 10),[0,0]));
-
 for(var i = 0; i < starAmount; i++)
     stars.push(new star(parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep, parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep , 5));
-
 
 function draw(){
 
@@ -418,11 +393,6 @@ function draw(){
     }
 
     drawPhantomSphere();
-
-    //if(scrollDragged){
-        // screenX = mouseX - canvas.width /2 ;
-        // screenY = mouseY - canvas.height /2;
-    //}
 
     if(relativeX != canvas.width / 2 && relativeY != canvas.height / 2){
 
@@ -451,8 +421,6 @@ function draw(){
                                    "r: " + relativeBody.r + '\n' +
                                    "pos: [" + parseInt(relativeBody.x * 100) / 100 + ", " + parseInt(relativeBody.y * 100) / 100 + "]"
     }
-
-    //console.log(relativeX,relativeY);
 
     //console.log(1 / ((performance.now() - startTime) / 1000))
 }
