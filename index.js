@@ -1,13 +1,19 @@
-canvas = document.getElementById("canvas");
-ctx = canvas.getContext("2d");
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var objectInfoText = document.getElementById("objectInfo");
+var simulationSpeedSlider = document.getElementById("simulationSpeed");
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+var rect = simulationSpeedSlider.getBoundingClientRect(); //https://stackoverflow.com/questions/442404/retrieve-the-position-x-y-of-an-html-element
+// rect.bottom = 1200;
+// rect.top = 800;
 
 var bodies = [], stars = [], drawInterval, screenX = 0, screenY = 0, zoom = 1, relativeX = canvas.width / 2, relativeY = canvas.height / 2;
 
 const G = 1; // gravity constant
 const trailLen = 5000; // maximum number of position records in body's trail
-const zoomStep = 0.05; // also minimum zoom
+const zoomStep = 0.03; // also minimum zoom
 const starAmount = 2000; // total number of stars
 
 class star{
@@ -18,10 +24,13 @@ class star{
         this.r = r;
         this.x0 = this.x;
         this.y0 = this.y;
+        this.visible = true;
+        //console.log(this.x0 + screenX);
     }
 
     display(){
 
+        if(!this.visible) return;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc((this.x - screenX - canvas.width/2) * zoom + canvas.width/2,(this.y - screenY - canvas.height/2) * zoom + canvas.height/2,this.r * zoom, 0, 2 * Math.PI);
@@ -31,11 +40,10 @@ class star{
         ctx.stroke();
     }
 
-    update(generateRandom = false){
-        if(generateRandom){
-            this.x0 = parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep;
-            this.y0 = parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep;
-        }
+    update(){
+
+        this.x0 = parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep;
+        this.y0 = parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep;
         this.x = this.x0 + screenX;
         this.y = this.y0 + screenY;
     }
@@ -69,6 +77,9 @@ class body{
         ctx.fillStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         ctx.fill();
         ctx.stroke();
+        // ctx.fillStyle = "white";
+        // ctx.font = "bold " + this.r/2 +"px serif";
+        // ctx.fillText(this.m,this.x - this.r / 2,this.y + this.r / 6);
 
         ctx.strokeStyle = `rgb(${this.color[0]},${this.color[1]},${this.color[2]})`;
         for(var i = 0; i < this.trail[0].length - 1; i++){
@@ -96,7 +107,7 @@ class body{
             prevFv = Fv;
         }
 
-        var dt = 1; // simulation is too fast for this (startTime - performance.now()) / 1000;
+        var dt = simulationSpeedSlider.value; // simulation is too fast for this (startTime - performance.now()) / 1000;
 
         this.a = [Fv[0]/this.m,Fv[1]/this.m]; // acceleration vector
         this.nextv = [this.v[0] + this.a[0] * dt, this.v[1] + this.a[1] * dt]; // velocity vector
@@ -145,25 +156,62 @@ class body{
 
 var b = null, x = null, y = null, rx = null, ry = null, r = null, vx = null, vy = null;
 var mouseX = null, mouseY = null;
-var bodyCreated = false, startedBodyCreation = false;
+var bodyCreated = false, bodyCanBeCreated = true;
 
-document.addEventListener("click",
+document.addEventListener("mouseup",
     function addBody(){
-    if(x < 0 || x > canvas.width || x == null || y < 0 || y > canvas.height || y == null){
-        x = window.event.clientX;
-        y = window.event.clientY;
-        startedBodyCreation = true;
-    } 
-    else if(rx < 0 || rx > canvas.width || rx == null || ry < 0 && ry > canvas.height || ry == null){
-        rx = window.event.clientX;
-        ry = window.event.clientY;
-        posX = ((x + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
-        posY = ((y + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
-        mouseXWorld = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
-        mouseYWorld = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
-        r = parseInt(Math.sqrt((mouseXWorld - posX) * (mouseXWorld - posX) + (mouseYWorld - posY) * (mouseYWorld - posY)));
 
-        if(r < 1){
+        if(!bodyCanBeCreated || event.button == 1 || event.button == 2) return;
+        if(x < 0 || x > canvas.width || x == null || y < 0 || y > canvas.height || y == null){
+
+            if(window.event.clientX >= 0 && window.event.clientX <= rect.right && window.event.clientY >= rect.top && window.event.clientY <= rect.bottom)
+                return;
+            // if(window.event.clientX == 0)
+            //     return;
+            x = window.event.clientX;
+            y = window.event.clientY;
+            startedBodyCreation = true;
+        } 
+        else if(rx < 0 || rx > canvas.width || rx == null || ry < 0 && ry > canvas.height || ry == null){
+
+            if(window.event.clientX >= 0 && window.event.clientX <= rect.right && window.event.clientY >= rect.top && window.event.clientY <= rect.bottom)
+                return;
+            rx = window.event.clientX;
+            ry = window.event.clientY;
+            //  console.log(x,y,rx,ry);
+            //console.log(screenX,screenY,(screenX / (screenX * zoom)));
+            posX = ((x + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
+            posY = ((y + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
+            mouseXWorld = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
+            mouseYWorld = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
+            r = parseInt(Math.sqrt((mouseXWorld - posX) * (mouseXWorld - posX) + (mouseYWorld - posY) * (mouseYWorld - posY)));
+
+            if(r < 1){
+                b = null;
+                x = null;
+                y = null;
+                rx = null;
+                ry = null;
+                r = null;
+                vx = null;
+                vy = null;
+                bodyCreated = false;
+                return; 
+            }
+            b = new body(posX,posY,r,parseInt(Math.PI * r * r), [0,0]);
+            startedBodyCreation = false;
+            bodyCreated = true;
+        }
+        else if(vx < 0 || vx > canvas.width || vx == null || vy < 0 && vy > canvas.height || vy == null){
+            if(window.event.clientX >= 0 && window.event.clientX <= rect.right && window.event.clientY >= rect.top && window.event.clientY <= rect.bottom)
+                return;
+            vx = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
+            vy = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
+            b.v[0] = (vx - posX) / 100;
+            b.v[1] = (vy - posY) / 100;
+            if(Math.abs(b.v[0]) < 0.1) b.v[0] = 0;
+            if(Math.abs(b.v[1]) < 0.1) b.v[1] = 0;
+            bodies.push(b);
             b = null;
             x = null;
             y = null;
@@ -173,31 +221,9 @@ document.addEventListener("click",
             vx = null;
             vy = null;
             bodyCreated = false;
-            return; 
         }
-        b = new body(posX,posY,r,parseInt(Math.PI * r * r), [0,0]);
-        startedBodyCreation = false;
-        bodyCreated = true;
-    }
-    else if(vx < 0 || vx > canvas.width || vx == null || vy < 0 && vy > canvas.height || vy == null){
-        vx = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
-        vy = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
-        b.v[0] = (vx - posX) / 100;
-        b.v[1] = (vy - posY) / 100;
-        if(Math.abs(b.v[0]) < 0.1) b.v[0] = 0;
-        if(Math.abs(b.v[1]) < 0.1) b.v[1] = 0;
-        bodies.push(b);
-        b = null;
-        x = null;
-        y = null;
-        rx = null;
-        ry = null;
-        r = null;
-        vx = null;
-        vy = null;
-        bodyCreated = false;
-    }
-
+        console.log(window.event.clientX,rect.left);
+        console.log(window.event.clientX >= rect.left);
 });
 
 document.addEventListener("contextmenu",
@@ -217,8 +243,8 @@ document.addEventListener("contextmenu",
 });
 
 document.addEventListener("contextmenu",
-    function() {
-
+    function(event) {
+        event.preventDefault();
         if(bodyCreated){
 
             posX_ = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
@@ -269,16 +295,29 @@ document.addEventListener("contextmenu",
 
 document.addEventListener("mousemove",
     function() {
+        if(window.event.clientX >= 0 && window.event.clientX <= rect.right && window.event.clientY >= rect.top && window.event.clientY <= rect.bottom)
+            return;
         mouseX = window.event.clientX;
         mouseY = window.event.clientY;
 });
 
-var scrollDragged = false;
+document.addEventListener("mousedown",
+    function() {
+        if(window.event.clientX >= 0 && window.event.clientX <= rect.right && window.event.clientY >= rect.top && window.event.clientY <= rect.bottom)
+            bodyCanBeCreated = false;
+        else
+            bodyCanBeCreated = true;
+});
+
+//var scrollDragged = false;
 
 document.addEventListener("mousedown",
     function(event) {
+
         if(event.button == 1){
-            scrollDragged = true;
+
+            event.preventDefault();
+            //scrollDragged = true;
             
             posX_ = ((window.event.clientX + screenX * zoom - canvas.width/2) / zoom + canvas.width/2);
             posY_ = ((window.event.clientY + screenY * zoom - canvas.height/2) / zoom + canvas.height/2);
@@ -301,19 +340,20 @@ document.addEventListener("mousedown",
                 relativeY = canvas.height / 2;
                 screenX += (window.event.clientX - canvas.width  / 2) / zoom;
                 screenY += (window.event.clientY - canvas.height / 2) / zoom;
+                objectInfoText.innerHTML = "";
             }
 
-            for(var i = 0; i < stars.length; i++){
-                stars[i].update(true);
+            for(var i = 0; i < starAmount; i++){
+                stars[i].update();
             }
         }
 });
 
-document.addEventListener("mouseup",
-    function(event) {
-        if(event.button == 1)
-            scrollDragged = false;
-});
+// document.addEventListener("mouseup",
+//     function(event) {
+//         if(event.button == 1)
+//             scrollDragged = false;
+// });
 
 document.addEventListener("wheel",
     function(event) {
@@ -348,6 +388,12 @@ function drawPhantomSphere(){ // it actually does 2 things: draws the sphere and
     }
 }
 
+//bodies.push(new body(canvas.width/2,canvas.height/2,100,parseInt(Math.PI * 100 * 100),[0,0]));
+
+// for(var i = 0; i < 1; i++)
+    // bodies.push(new body(canvas.width/2,canvas.height/2,10,parseInt(Math.PI * 10 * 10),[0,0]));
+    // bodies.push(new body(canvas.width/2 + 300,canvas.height/2 + 300,10,parseInt(Math.PI * 10 * 10),[0,0]));
+
 for(var i = 0; i < starAmount; i++)
     stars.push(new star(parseInt(Math.random() * 2 * canvas.width / zoomStep) - canvas.width / zoomStep, parseInt(Math.random() * 2 * canvas.height / zoomStep) - canvas.height / zoomStep , 5));
 
@@ -359,7 +405,7 @@ function draw(){
     ctx.fillStyle = `rgb(0,0,50)`;
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    for(var i = 0; i < stars.length; i++){
+    for(var i = 0; i < starAmount; i++){
         stars[i].display();
     }
     
@@ -370,17 +416,43 @@ function draw(){
         if(bodies[i].r == 0)
             bodies.splice(i,1);
     }
-    
+
     drawPhantomSphere();
 
+    //if(scrollDragged){
+        // screenX = mouseX - canvas.width /2 ;
+        // screenY = mouseY - canvas.height /2;
+    //}
+
     if(relativeX != canvas.width / 2 && relativeY != canvas.height / 2){
+
         screenX = relativeBody.x - canvas.width / 2;
         screenY = relativeBody.y - canvas.height / 2;
 
-        for(var i = 0; i < stars.length; i++){
-            stars[i].update(false);
+        if(simulationSpeedSlider.value <= 9){
+            for(var i = 0; i < starAmount / (15 - simulationSpeedSlider.value); i++){
+                stars[i].visible = true;
+                stars[i].update();
+            }
+            for(var i = parseInt(starAmount / (15 - simulationSpeedSlider.value)); i < starAmount; i++){
+                stars[i].visible = false;
+            }
         }
+        else{
+            for(var i = 0; i < starAmount; i++){
+                stars[i].visible = true;
+                stars[i].update();
+            }
+        }
+
+        objectInfoText.innerHTML = "v: [" + parseInt(relativeBody.v[0] * 1000) / 1000 + ", " + parseInt(relativeBody.v[1] * 1000) / 1000 + "]" + '\n' +
+                                   "a: [" + parseInt(relativeBody.a[0] * 1000) / 1000 + ", " + parseInt(relativeBody.a[1] * 1000) / 1000 + "]" + '\n' +
+                                   "m: " + relativeBody.m + '\n' +
+                                   "r: " + relativeBody.r + '\n' +
+                                   "pos: [" + parseInt(relativeBody.x * 100) / 100 + ", " + parseInt(relativeBody.y * 100) / 100 + "]"
     }
+
+    //console.log(relativeX,relativeY);
 
     //console.log(1 / ((performance.now() - startTime) / 1000))
 }
