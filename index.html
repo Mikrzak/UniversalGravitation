@@ -11,6 +11,9 @@
             <p id="objectInfo"></p>
             <input type="range" id="simulationSpeed" min="0" max="10" value="1" step="0.5"></input> <br>
             <label id="simulationSpeedLabel" for="simulationSpeed">szybkość symulacji</label>
+            <input type="checkbox" id="showTrail" checked="true">ścieżka</input>
+            <input type="checkbox" id="lockFps" onclick="changeDrawFps()">limit 60 fps</input>
+            <input type="checkbox" id="showStars" checked="true" onclick="toggleStars()">gwiazdy</input>
         </div>
     </div>
     <p id="guide"> kliknięcie scrollem: zmiana pozycji kamery lub skupienie na obiekcie <br>
